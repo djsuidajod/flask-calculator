@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>계산기</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: sans-serif; margin: 24px; }
+    h1 { margin-bottom: 10px; }
+    form { margin: 12px 0; }
+    input[type=text] { padding: 8px; width: 280px; }
+    select { padding: 8px; }
+    button { padding: 8px 12px; cursor: pointer; }
+    .flash { background: #f1f5f9; border: 1px solid #e2e8f0; padding: 8px; margin: 8px 0; border-radius: 6px; }
+    h2 { margin-top: 24px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background: #f8fafc; }
+    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
+    @media (min-width: 900px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- flash 메시지 -->
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for m in messages %}
+        <div class="flash">{{ m }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- 현재 선택된 계산기 모드 표시 -->
+  <h2 id="calcModeLabel">일반 계산기</h2>
+
+  <!-- 계산 입력 -->
+  <form class="row" method="POST" action="{{ url_for('calc') }}">
+    <input type="text" id="expression" name="expression" placeholder="예: (2+3)*4/2" required />
+    <select name="mode" id="mode">
+      <option value="basic">일반 계산기</option>
+      <option value="sci">공학 계산기</option>
+    </select>
+    <button type="submit">계산</button>
+  </form>
+
+  <script>
+    const modeSelect = document.getElementById('mode');
+    const exprInput = document.getElementById('expression');
+    const calcModeLabel = document.getElementById('calcModeLabel');
+
+    modeSelect.addEventListener('change', function() {
+      if (this.value === 'basic') {
+        exprInput.placeholder = "예: (2+3)*4/2";
+        calcModeLabel.textContent = "일반 계산기";
+      } else if (this.value === 'sci') {
+        exprInput.placeholder = "예: sin(3.14159/2) 또는 log(100,10)";
+        calcModeLabel.textContent = "공학 계산기";
+      }
+    });
+  </script>
+
+  <div class="grid">
+    <!-- 일반 계산기 이력 -->
+    <section>
+      <h2>일반 계산기 이력</h2>
+      <form method="POST" action="{{ url_for('history_clear') }}" onsubmit="return confirm('일반 계산기 이력을 모두 삭제하고 ID를 초기화할까요?');">
+        <button type="submit">일반 이력 초기화</button>
+      </form>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Expression</th>
+            <th>Result</th>
+            <th>Created At</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for row in rows_basic %}
+          <tr>
+            <td>{{ row.id }}</td>
+            <td>{{ row.expression }}</td>
+            <td>{{ '%.6f'|format(row.result) }}</td>
+            <td>
+              {% if row.created_at %}
+                {{ row.created_at.strftime('%Y-%m-%d %H:%M:%S') if row.created_at.strftime else row.created_at }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="4">이력이 없습니다.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 공학 계산기 이력 -->
+    <section>
+      <h2>공학 계산기 이력</h2>
+      <form method="POST" action="{{ url_for('sci_history_clear') }}" onsubmit="return confirm('공학 계산기 이력을 모두 삭제하고 ID를 초기화할까요?');">
+        <button type="submit">공학 이력 초기화</button>
+      </form>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Expression</th>
+            <th>Result</th>
+            <th>Created At</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for row in rows_sci %}
+          <tr>
+            <td>{{ row.id }}</td>
+            <td>{{ row.expression }}</td>
+            <td>{{ '%.6f'|format(row.result) }}</td>
+            <td>
+              {% if row.created_at %}
+                {{ row.created_at.strftime('%Y-%m-%d %H:%M:%S') if row.created_at.strftime else row.created_at }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="4">이력이 없습니다.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </div>
+</body>
+</html>
